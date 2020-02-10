@@ -24,7 +24,7 @@
 
 #define FILTER      1
 #define RWX_FILTER  "rw-"
-#define INTERVALS   100
+#define INTERVALS   1
 #define SLEEP_MICRO 10000
 
 /* End user defined variables */
