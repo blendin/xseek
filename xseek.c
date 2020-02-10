@@ -24,7 +24,7 @@
 
 #define FILTER      1
 #define RWX_FILTER  "rw-"
-#define INTERVALS   1
+#define INTERVALS   10
 #define SLEEP_MICRO 10000
 
 /* End user defined variables */
@@ -45,24 +45,8 @@ void usage(char *myname) {
   exit(3);
 }
 
-void dump_memory(pid_t child, int count) {
+void dump_memory(FILE *mapfile, int memfd, pid_t child, int count) {
   char *filepath, tmp[MAXBUF], procmem[MAXBUF];
-  FILE *mapfile;
-  int memfd;
-
-  sprintf(tmp, "/proc/%d/maps", child);
-  mapfile = fopen(tmp, "r");
-
-  if (!mapfile) {
-    fatal("/proc/%d/maps could not be open\n", child);
-  }
-
-  sprintf(tmp, "/proc/%d/mem", child);
-  memfd = open(tmp, O_RDONLY);
-
-  if (memfd == -1) {
-    fatal("[!] failed to open %s\n", tmp);
-  }
 
   while (fgets(tmp, MAXBUF, mapfile)) {
     char line[MAXBUF], perms[MAXBUF], r, w, x;
@@ -123,14 +107,33 @@ void dump_memory(pid_t child, int count) {
 
     close(dumpfile);
   }
+
+  fseek(mapfile, 0, SEEK_SET);
 }
 
 void dump_wrapper(pid_t child) {
+  FILE *mapfile;
+  int memfd;
   char tmp[MAXBUF];
   int count = 0;
 
+  sprintf(tmp, "/proc/%d/maps", child);
+  mapfile = fopen(tmp, "r");
+
+  if (!mapfile) {
+    fatal("/proc/%d/maps could not be open\n", child);
+  }
+
+  sprintf(tmp, "/proc/%d/mem", child);
+  memfd = open(tmp, O_RDONLY);
+
+  if (memfd == -1) {
+    fatal("[!] failed to open %s\n", tmp);
+  }
+
+
   while (count < INTERVALS) {
-    dump_memory(child, count++);
+    dump_memory(mapfile, memfd, child, count++);
     usleep(SLEEP_MICRO);
   }
 }
